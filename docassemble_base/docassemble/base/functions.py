@@ -3961,6 +3961,113 @@ def define(var, val):
     if '__define_val' in user_dict:
         del user_dict['__define_val']
 
+
+def _defined_internal(var, caller, alt=None):
+    """Checks if a variable is defined at all in the stack. Used by defined(),
+    value(), and showifdef(). `var` is the name of the variable to check,
+    `caller` is the name of the function calling (which determines what to do
+    if the variable is found to be defined or not).
+
+    If caller = 'defined', then True/False is returned depending on if the variable is defined
+    If caller = 'value', then the actual value of the variable is returned, after asking the
+      user all of the questions necessary to answer it
+    If caller = 'showifdef', then the value if returned, but only if no questions have to be asked
+    """
+    frame = inspect.currentframe() 
+    components = components_of(var)
+    if len(components) == 0 or len(components[0]) < 2:
+        raise Exception("defined: variable " + repr(var) + " is not a valid variable name")
+    variable = components[0][1]
+    the_user_dict = frame.f_locals
+    while variable not in the_user_dict:
+        frame = frame.f_back
+        if frame is None:
+            if caller == 'defined':
+                return False
+            elif caller == 'showifdef':
+                return alt
+            force_ask(variable, persistent=False)
+        if 'user_dict' in frame.f_locals:
+            the_user_dict = eval('user_dict', frame.f_locals)
+            if variable in the_user_dict:
+                break
+            else:
+                if caller == 'defined':
+                    return False
+                elif caller == 'showifdef':
+                    return alt
+                force_ask(variable, persistent=False)
+        else:
+            the_user_dict = frame.f_locals
+    if variable not in the_user_dict:
+        if caller == 'defined':
+            return False
+        elif caller == 'showifdef':
+            return alt
+        force_ask(variable, persistent=False)
+
+    if len(components) == 1:
+        if caller == 'defined':
+            return True 
+        elif caller == 'value' or caller == 'showifdef':
+            return eval(variable, the_user_dict) 
+    cum_variable = ''
+    for elem in components:
+        if elem[0] == 'name':
+            # value() uses the below instead?
+            #if cum_variable == '':
+            #    cum_variable = elem[1]
+            cum_variable += elem[1]
+            continue
+        elif elem[0] == 'attr':
+            to_eval = "hasattr(" + cum_variable + ", " + repr(elem[1]) + ")"
+            cum_variable += '.' + elem[1]
+        elif elem[0] == 'index':
+            try:
+                the_index = eval(elem[1], the_user_dict)
+            except:
+                if caller == 'defined':
+                    return False
+                elif caller == 'showifdef':
+                    return alt
+                force_ask(elem[1], persistent=False)
+            try:
+                the_cum = eval(cum_variable, the_user_dict)
+            except:
+                if caller == 'defined':
+                    return False
+                elif caller == 'showifdef':
+                    return alt
+                force_ask(cum_variable, persistent=False)
+            if hasattr(the_cum, 'instanceName') and hasattr(the_cum, 'elements'):
+                cum_variable_elements = cum_variable + '.elements'
+            else:
+                cum_variable_elements = cum_variable
+            if type(the_index) == int:
+                to_eval = 'len(' + cum_variable_elements + ') > ' + str(the_index)
+            else:
+                to_eval = elem[1] + " in " + cum_variable_elements
+            cum_variable += '[' + elem[1] + ']'
+        try:
+            result = eval(to_eval, the_user_dict)
+        except Exception as err:
+            if caller == 'defined':
+                return False
+            elif caller == 'showifdef':
+                return alt
+            force_ask(to_eval, persistent=False)
+        if result:
+            continue
+        if caller == 'defined':
+            return False
+        elif caller == 'showifdef':
+            return alt
+        force_ask(var, persistent=False)
+    if caller == 'defined':
+        return True 
+    elif caller == 'value' or caller == 'showifdef':
+        return eval(cum_variable, the_user_dict) 
+
 def defined(var):
     """Returns true if the variable has already been defined.  Otherwise, returns false."""
     str(var)
@@ -3973,69 +4080,7 @@ def defined(var):
         return True
     except:
         pass
-    frame = inspect.stack()[1][0]
-    components = components_of(var)
-    if len(components) == 0 or len(components[0]) < 2:
-        raise Exception("defined: variable " + repr(var) + " is not a valid variable name")
-    variable = components[0][1]
-    the_user_dict = frame.f_locals
-    while variable not in the_user_dict:
-        frame = frame.f_back
-        if frame is None:
-            return False
-        if 'user_dict' in frame.f_locals:
-            the_user_dict = eval('user_dict', frame.f_locals)
-            if variable in the_user_dict:
-                break
-            else:
-                return False
-        else:
-            the_user_dict = frame.f_locals
-    if variable not in the_user_dict:
-        #logmessage("Returning False1")
-        return False
-    if len(components) == 1:
-        return True
-    cum_variable = ''
-    for elem in components:
-        if elem[0] == 'name':
-            cum_variable += elem[1]
-            continue
-        elif elem[0] == 'attr':
-            to_eval = "hasattr(" + cum_variable + ", " + repr(elem[1]) + ")"
-            cum_variable += '.' + elem[1]
-        elif elem[0] == 'index':
-            try:
-                the_index = eval(elem[1], the_user_dict)
-            except:
-                #logmessage("Returning False2")
-                return False
-            try:
-                the_cum = eval(cum_variable, the_user_dict)
-            except:
-                #logmessage("Returning False2.5")
-                return False
-            if hasattr(the_cum, 'instanceName') and hasattr(the_cum, 'elements'):
-                if type(the_index) == int:
-                    to_eval = 'len(' + cum_variable + '.elements) > ' + str(the_index)
-                else:
-                    to_eval = elem[1] + " in " + cum_variable + ".elements"
-            else:
-                if type(the_index) == int:
-                    to_eval = 'len(' + cum_variable + ') > ' + str(the_index)
-                else:
-                    to_eval = elem[1] + " in " + cum_variable
-            cum_variable += '[' + elem[1] + ']'
-        try:
-            result = eval(to_eval, the_user_dict)
-        except Exception as err:
-            #logmessage("Returning False3 after " + to_eval + ": " + str(err))
-            return False
-        if result:
-            continue
-        #logmessage("Returning False4")
-        return False
-    return True
+    return _defined_internal(var, 'defined')
 
 def illegal_variable_name(var):
     if re.search(r'[\n\r]', var):
@@ -4059,63 +4104,7 @@ def value(var):
         pass
     if re.search(r'[\(\)\n\r]|lambda:|lambda ', var):
         raise Exception("value() is invalid: " + repr(var))
-    frame = inspect.stack()[1][0]
-    components = components_of(var)
-    if len(components) == 0 or len(components[0]) < 2:
-        raise Exception("value: variable " + repr(var) + " is not a valid variable name")
-    variable = components[0][1]
-    the_user_dict = frame.f_locals
-    while variable not in the_user_dict:
-        frame = frame.f_back
-        if frame is None:
-            force_ask(variable, persistent=False)
-        if 'user_dict' in frame.f_locals:
-            the_user_dict = eval('user_dict', frame.f_locals)
-            if variable in the_user_dict:
-                break
-            else:
-                force_ask(variable, persistent=False)
-        else:
-            the_user_dict = frame.f_locals
-    if variable not in the_user_dict:
-        force_ask(variable, persistent=False)
-    if len(components) == 1:
-        return eval(variable, the_user_dict)
-    cum_variable = ''
-    for elem in components:
-        if elem[0] == 'name':
-            if cum_variable == '':
-                cum_variable = elem[1]
-            continue
-        elif elem[0] == 'attr':
-            to_eval = "hasattr(" + cum_variable + ", " + repr(elem[1]) + ")"
-            cum_variable += '.' + elem[1]
-        elif elem[0] == 'index':
-            try:
-                the_index = eval(elem[1], the_user_dict)
-            except:
-                force_ask(elem[1], persistent=False)
-            try:
-                the_cum_variable = eval(cum_variable, the_user_dict)
-            except:
-                force_ask(cum_variable, persistent=False)
-            if hasattr(the_cum_variable, 'instanceName') and hasattr(the_cum_variable, 'elements'):
-                cum_variable_elements = cum_variable + '.elements'
-            else:
-                cum_variable_elements = cum_variable
-            if type(the_index) == int:
-                to_eval = 'len(' + cum_variable_elements + ') > ' + str(the_index)
-            else:
-                to_eval = elem[1] + " in " + cum_variable_elements
-            cum_variable += '[' + elem[1] + ']'
-        try:
-            result = eval(to_eval, the_user_dict)
-        except:
-            force_ask(to_eval, persistent=False)
-        if result:
-            continue
-        force_ask(var, persistent=False)
-    return eval(cum_variable, the_user_dict)
+    return _defined_internal(var, 'value')
 
 # def _undefine(*pargs):
 #     logmessage("called _undefine")
@@ -4525,11 +4514,20 @@ def showif(var, condition, alternative=''):
 def showifdef(var, alternative=''):
     """Returns the variable indicated by the variable name if it is
     defined, but otherwise returns empty text, or other alternative text.
-
     """
-    if defined(var):
-        return value(var)
-    return alternative
+    # A combination of the preambles of defined and value
+    str(var)
+    if not isinstance(var, str):
+        raise Exception("showifdef() must be given a string")
+    if not re.search(r'[A-Za-z][A-Za-z0-9\_]*', var):
+        raise Exception("showifdef() must be given a valid Python variable name")
+    try:
+        return eval(var, dict())
+    except:
+        pass
+    if re.search(r'[\(\)\n\r]|lambda:|lambda ', var):
+        raise Exception("showifdef() is invalid: " + repr(var))
+    return _defined_internal(var, 'showifdef', alt=alternative)
 
 def log(message, priority='log'):
     """Log a message to the server or the browser."""
