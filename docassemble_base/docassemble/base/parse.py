@@ -3953,6 +3953,8 @@ class Question:
                     #     field_info['extras'][key] = TextObject(definitions + str(field[key]), question=self)
                     elif key == 'shuffle':
                         field_info['shuffle'] = field[key]
+                    elif key == 'group':
+                        field_info['group'] = field[key]
                     elif key == 'none of the above' and 'datatype' in field and field['datatype'] in ('checkboxes', 'object_checkboxes', 'object_radio'):
                         if isinstance(field[key], bool):
                             field_info['nota'] = field[key]
@@ -5557,6 +5559,8 @@ class Question:
                                     new_item['help'] = choice['help'].text(user_dict)
                                 if 'default' in choice:
                                     new_item['default'] = choice['default']
+                                if 'group' in choice:
+                                    new_item['group'] = choice['group']
                                 if isinstance(choice['key'], TextObject):
                                     new_item['key'] = choice['key'].text(user_dict)
                                 else:
@@ -5838,12 +5842,18 @@ class Question:
                         if 'fields_code' in field.extras:
                             the_question = self.get_question_for_field_with_sub_fields(field, user_dict)
                             ask_result = the_question.ask(user_dict, old_user_dict, the_x, iterators, sought, orig_sought)
-                            for field_num, val in ask_result[key].items():
-                                selectcompute[str(field.number) + '_' + str(field_num)] = val
-                                defaults[str(field.number) + '_' + str(field_num)] = val
-                                hints[str(field.number) + '_' + str(field_num)] = val
-                                helptexts[str(field.number) + '_' + str(field_num)] = val
-                                labels[str(field.number) + '_' + str(field_num)] = val
+                            for key in ('selectcompute', 'defaults', 'hints', 'helptexts', 'labels'):
+                                for field_num, val in ask_result[key].items():
+                                    if key == 'selectcompute':
+                                        selectcompute[str(field.number) + '_' + str(field_num)] = val
+                                    elif key == 'defaults':
+                                        defaults[str(field.number) + '_' + str(field_num)] = val
+                                    elif key == 'hints':
+                                        hints[str(field.number) + '_' + str(field_num)] = val
+                                    elif key == 'helptexts':
+                                        helptexts[str(field.number) + '_' + str(field_num)] = val
+                                    elif key == 'labels':
+                                        labels[str(field.number) + '_' + str(field_num)] = val
                             for key, possible_dict in ask_result['extras'].items():
                                 #logmessage(repr("key is " + str(key) + " and possible dict is " + repr(possible_dict)))
                                 if isinstance(possible_dict, dict):
@@ -8870,7 +8880,9 @@ def process_selections(data, exclude=None):
     result = []
     if (isinstance(data, abc.Iterable) and not isinstance(data, (str, dict)) and not (hasattr(data, 'elements') and isinstance(data.elements, dict))) \
             or (hasattr(data, 'elements') and isinstance(data.elements, (list, set))):
+        logmessage('is iterable!')
         for entry in data:
+            logmessage(f'entry is: {entry}')
             if isinstance(entry, dict) or (hasattr(entry, 'elements') and isinstance(entry.elements, dict)):
                 the_item = {}
                 for key in entry:
@@ -8882,6 +8894,7 @@ def process_selections(data, exclude=None):
                         if 'help' in entry:
                             the_item['help'] = entry['help']
                         if 'group' in entry:
+                            logmessage(f'group was in entry!: {entry}')
                             the_item['group'] = entry['group']
                         if 'image' in entry:
                             if entry['image'].__class__.__name__ == 'DAFile':
