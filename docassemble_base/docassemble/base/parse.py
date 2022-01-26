@@ -1869,7 +1869,8 @@ class Question:
             raise DAError("This block is missing a 'question' directive." + self.idebug(data))
         if self.interview.debug:
             for key in data:
-                if key not in ('features', 'scan for variables', 'only sets', 'question', 'code', 'event', 'translations', 'default language', 'on change', 'sections', 'progressive', 'auto open', 'section', 'machine learning storage', 'language', 'prevent going back', 'back button', 'usedefs', 'continue button label', 'resume button label', 'back button label', 'corner back button label', 'skip undefined', 'list collect', 'mandatory', 'attachment options', 'script', 'css', 'initial', 'default role', 'command', 'objects from file', 'use objects', 'data', 'variable name', 'data from code', 'objects', 'id', 'ga id', 'segment id', 'segment', 'supersedes', 'order', 'image sets', 'images', 'def', 'mako', 'interview help', 'default screen parts', 'default validation messages', 'generic object', 'generic list object', 'comment', 'metadata', 'modules', 'reset', 'imports', 'terms', 'auto terms', 'role', 'include', 'action buttons', 'if', 'validation code', 'require', 'orelse', 'attachment', 'attachments', 'attachment code', 'attachments code', 'allow emailing', 'allow downloading', 'email subject', 'email body', 'email address default', 'progress', 'zip filename', 'action', 'backgroundresponse', 'response', 'binaryresponse', 'all_variables', 'response filename', 'content type', 'redirect url', 'null response', 'sleep', 'include_internal', 'css class', 'table css class', 'response code', 'subquestion', 'reload', 'help', 'audio', 'video', 'decoration', 'signature', 'under', 'pre', 'post', 'right', 'check in', 'yesno', 'noyes', 'yesnomaybe', 'noyesmaybe', 'sets', 'event', 'choices', 'buttons', 'dropdown', 'combobox', 'field', 'shuffle', 'review', 'need', 'depends on', 'target', 'table', 'rows', 'columns', 'require gathered', 'allow reordering', 'edit', 'delete buttons', 'confirm', 'read only', 'edit header', 'confirm', 'show if empty', 'template', 'content file', 'content', 'subject', 'reconsider', 'undefine', 'continue button field', 'fields', 'indent', 'url', 'default', 'datatype', 'extras', 'allowed to set', 'show incomplete', 'not available label', 'required', 'always include editable files', 'question metadata', 'include attachment notice', 'include download tab', 'manual attachment list', 'breadcrumb'):
+                if key not in ('features', 'scan for variables', 'only sets', 'question', 'code', 'event', 'translations', 'default language', 'on change', 'sections', 'progressive', 'auto open', 'section', 'machine learning storage', 'language', 'prevent going back', 'back button', 'usedefs', 'continue button label', 'resume button label', 'back button label', 'corner back button label', 'skip undefined', 'list collect', 'mandatory', 'attachment options', 'script', 'css', 'initial', 'default role', 'command', 'objects from file', 'use objects', 'data', 'variable name', 'data from code', 'objects', 'id', 'ga id', 'segment id', 'segment', 'supersedes', 'order', 'image sets', 'images', 'def', 'mako', 'interview help', 'default screen parts', 'default validation messages', 'generic object', 'generic list object', 
+                  'comment', 'metadata', 'modules', 'reset', 'imports', 'terms', 'auto terms', 'role', 'include', 'action buttons', 'if', 'validation code', 'require', 'orelse', 'attachment', 'attachments', 'attachment code', 'attachments code', 'allow emailing', 'allow downloading', 'email subject', 'email body', 'email address default', 'progress', 'zip filename', 'action', 'backgroundresponse', 'response', 'binaryresponse', 'all_variables', 'response filename', 'content type', 'redirect url', 'null response', 'sleep', 'include_internal', 'css class', 'table css class', 'response code', 'subquestion', 'reload', 'help', 'audio', 'video', 'decoration', 'signature', 'under', 'pre', 'post', 'right', 'check in', 'yesno', 'noyes', 'yesnomaybe', 'noyesmaybe', 'sets', 'event', 'choices', 'buttons', 'dropdown', 'combobox', 'field', 'shuffle', 'review', 'need', 'depends on', 'target', 'table', 'rows', 'columns', 'require gathered', 'allow reordering', 'edit', 'delete buttons', 'confirm', 'read only', 'edit header', 'confirm', 'show if empty', 'template', 'content file', 'content', 'subject', 'reconsider', 'undefine', 'continue button field', 'fields', 'indent', 'url', 'default', 'datatype', 'extras', 'allowed to set', 'show incomplete', 'not available label', 'required', 'always include editable files', 'question metadata', 'include attachment notice', 'include download tab', 'manual attachment list', 'breadcrumb'):
                     logmessage("Ignoring unknown dictionary key '" + key + "'." + self.idebug(data))
         if 'features' in data:
             should_append = False
@@ -5837,18 +5838,12 @@ class Question:
                         if 'fields_code' in field.extras:
                             the_question = self.get_question_for_field_with_sub_fields(field, user_dict)
                             ask_result = the_question.ask(user_dict, old_user_dict, the_x, iterators, sought, orig_sought)
-                            for key in ('selectcompute', 'defaults', 'hints', 'helptexts', 'labels'):
-                                for field_num, val in ask_result[key].items():
-                                    if key == 'selectcompute':
-                                        selectcompute[str(field.number) + '_' + str(field_num)] = val
-                                    elif key == 'defaults':
-                                        defaults[str(field.number) + '_' + str(field_num)] = val
-                                    elif key == 'hints':
-                                        hints[str(field.number) + '_' + str(field_num)] = val
-                                    elif key == 'helptexts':
-                                        helptexts[str(field.number) + '_' + str(field_num)] = val
-                                    elif key == 'labels':
-                                        labels[str(field.number) + '_' + str(field_num)] = val
+                            for field_num, val in ask_result[key].items():
+                                selectcompute[str(field.number) + '_' + str(field_num)] = val
+                                defaults[str(field.number) + '_' + str(field_num)] = val
+                                hints[str(field.number) + '_' + str(field_num)] = val
+                                helptexts[str(field.number) + '_' + str(field_num)] = val
+                                labels[str(field.number) + '_' + str(field_num)] = val
                             for key, possible_dict in ask_result['extras'].items():
                                 #logmessage(repr("key is " + str(key) + " and possible dict is " + repr(possible_dict)))
                                 if isinstance(possible_dict, dict):
@@ -6012,7 +6007,8 @@ class Question:
         if self.need_post is not None:
             for need_code in self.need_post:
                 eval(need_code, user_dict)
-        return {'type': 'question', 'question_text': question_text, 'subquestion_text': subquestion, 'continue_label': continuelabel, 'audiovideo': audiovideo, 'decorations': decorations, 'help_text': help_text_list, 'interview_help_text': interview_help_text_list, 'attachments': attachment_text, 'question': self, 'selectcompute': selectcompute, 'defaults': defaults, 'hints': hints, 'helptexts': helptexts, 'extras': extras, 'labels': labels, 'sought': sought, 'orig_sought': orig_sought}
+        return {'type': 'question', 'question_text': question_text, 'subquestion_text': subquestion, 'continue_label': continuelabel, 'audiovideo': audiovideo, 'decorations': decorations, 'help_text': help_text_list, 'interview_help_text': interview_help_text_list, 'attachments': attachment_text, 'question': self, 
+          'selectcompute': selectcompute, 'defaults': defaults, 'hints': hints, 'helptexts': helptexts, 'extras': extras, 'labels': labels, 'sought': sought, 'orig_sought': orig_sought}
     def processed_attachments(self, the_user_dict, **kwargs):
         use_cache = kwargs.get('use_cache', True)
         if self.compute_attachment is not None:
@@ -6342,7 +6338,14 @@ class Question:
                 the_filename = attachment['filename'].text(the_user_dict).strip()
                 if the_filename == '':
                     the_filename = docassemble.base.functions.space_to_underscore(the_name)
-                the_user_dict['_attachment_info'] = dict(name=the_name, filename=the_filename, description=attachment['description'].text(the_user_dict), valid_formats=result['valid_formats'], formats=result['formats_to_use'], attachment=dict(name=attachment['question_name'], number=attachment['indexno']), extension=result.get('extension', {}), mimetype=result.get('mimetype', {}), content=result.get('content', {}), markdown=result.get('markdown', {}), metadata=result.get('metadata', {}), convert_to_pdf_a=result.get('convert_to_pdf_a', False), convert_to_tagged_pdf=result.get('convert_to_tagged_pdf', False), orig_variable_name=result.get('orig_variable_name', None), raw=result['raw'], permissions=result.get('permissions', None))
+                the_user_dict['_attachment_info'] = dict(
+                  name=the_name, filename=the_filename, description=attachment['description'].text(the_user_dict), valid_formats=result['valid_formats'], 
+                  formats=result['formats_to_use'], attachment=dict(name=attachment['question_name'], number=attachment['indexno']), 
+                  extension=result.get('extension', {}), mimetype=result.get('mimetype', {}), content=result.get('content', {}), 
+                  markdown=result.get('markdown', {}), metadata=result.get('metadata', {}), convert_to_pdf_a=result.get('convert_to_pdf_a', False), 
+                  convert_to_tagged_pdf=result.get('convert_to_tagged_pdf', False), orig_variable_name=result.get('orig_variable_name', None), 
+                  raw=result['raw'], permissions=result.get('permissions', None)
+                )
                 exec(variable_name + '.info = _attachment_info', the_user_dict)
                 del the_user_dict['_attachment_info']
                 for doc_format in result['file']:
@@ -7204,7 +7207,11 @@ class Interview:
     def get_title(self, the_user_dict, status=None, converter=None):
         if converter is None:
             converter = lambda y: y
-        mapping = (('title', 'full'), ('logo', 'logo'), ('short logo', 'short logo'), ('short title', 'short'), ('tab title', 'tab'), ('subtitle', 'sub'), ('exit link', 'exit link'), ('exit label', 'exit label'), ('exit url', 'exit url'), ('submit', 'submit'), ('pre', 'pre'), ('post', 'post'), ('footer', 'footer'), ('continue button label', 'continue button label'), ('resume button label', 'resume button label'), ('back button label', 'back button label'), ('corner back button label', 'corner back button label'), ('under', 'under'), ('right', 'right'), ('css class', 'css class'), ('table css class', 'table css class'), ('date format', 'date format'), ('time format', 'time format'), ('datetime format', 'datetime format'), ('title url', 'title url'), ('title url opens in other window', 'title url opens in other window'), ('navigation bar html', 'navigation bar html'))
+        mapping = (('title', 'full'), ('logo', 'logo'), ('short logo', 'short logo'), ('short title', 'short'), ('tab title', 'tab'), ('subtitle', 'sub'), ('exit link', 'exit link'), ('exit label', 'exit label'), ('exit url', 'exit url'), ('submit', 'submit'), ('pre', 'pre'), ('post', 'post'), 
+          ('footer', 'footer'), ('continue button label', 'continue button label'), ('resume button label', 'resume button label'), ('back button label', 'back button label'), ('corner back button label', 'corner back button label'), ('under', 'under'), ('right', 'right'), ('css class', 'css class'), 
+          ('table css class', 'table css class'), ('date format', 'date format'), ('time format', 'time format'), 
+          ('datetime format', 'datetime format'), ('title url', 'title url'), ('title url opens in other window', 'title url opens in other window'), 
+          ('navigation bar html', 'navigation bar html'))
         title = {}
         for title_name, title_abb in mapping:
             if '_internal' in the_user_dict and title_name in the_user_dict['_internal'] and the_user_dict['_internal'][title_name] is not None:
@@ -7456,7 +7463,14 @@ class Interview:
                     recursive_update(self.consolidated_metadata[key], val)
                 else:
                     self.consolidated_metadata[key] = val
-        mapping = (('title', 'full'), ('logo', 'logo'), ('short logo', 'short logo'), ('short title', 'short'), ('tab title', 'tab'), ('subtitle', 'sub'), ('exit link', 'exit link'), ('exit label', 'exit label'), ('exit url', 'exit url'), ('submit', 'submit'), ('pre', 'pre'), ('post', 'post'), ('footer', 'footer'), ('help label', 'help label'), ('continue button label', 'continue button label'), ('resume button label', 'resume button label'), ('back button label', 'back button label'), ('corner back button label', 'corner back button label'), ('right', 'right'), ('under', 'under'), ('submit', 'submit'), ('css class', 'css class'), ('table css class', 'table css class'), ('date format', 'date format'), ('time format', 'time format'), ('datetime format', 'datetime format'), ('title url', 'title url'), ('title url opens in other window', 'title url opens in other window'), ('navigation bar html', 'navigation bar html'))
+        mapping = (('title', 'full'), ('logo', 'logo'), ('short logo', 'short logo'), ('short title', 'short'), 
+            ('tab title', 'tab'), ('subtitle', 'sub'), ('exit link', 'exit link'), ('exit label', 'exit label'), 
+            ('exit url', 'exit url'), ('submit', 'submit'), ('pre', 'pre'), ('post', 'post'), ('footer', 'footer'), ('help label', 'help label'), 
+            ('continue button label', 'continue button label'), ('resume button label', 'resume button label'), 
+            ('back button label', 'back button label'), ('corner back button label', 'corner back button label'), ('right', 'right'), 
+            ('under', 'under'), ('submit', 'submit'), ('css class', 'css class'), ('table css class', 'table css class'), 
+            ('date format', 'date format'), ('time format', 'time format'), ('datetime format', 'datetime format'), ('title url', 'title url'), 
+            ('title url opens in other window', 'title url opens in other window'), ('navigation bar html', 'navigation bar html'))
         self.default_title = {'*': {}}
         for metadata in self.metadata:
             for title_name, title_abb in mapping:
@@ -8854,18 +8868,21 @@ def process_selections(data, exclude=None):
     else:
         to_exclude = unpack_list(exclude)
     result = []
-    if (isinstance(data, abc.Iterable) and not isinstance(data, (str, dict)) and not (hasattr(data, 'elements') and isinstance(data.elements, dict))) or (hasattr(data, 'elements') and isinstance(data.elements, (list, set))):
+    if (isinstance(data, abc.Iterable) and not isinstance(data, (str, dict)) and not (hasattr(data, 'elements') and isinstance(data.elements, dict))) \
+            or (hasattr(data, 'elements') and isinstance(data.elements, (list, set))):
         for entry in data:
             if isinstance(entry, dict) or (hasattr(entry, 'elements') and isinstance(entry.elements, dict)):
                 the_item = {}
                 for key in entry:
                     if len(entry) > 1:
-                        if key in ['default', 'help', 'image', 'label']:
+                        if key in ['default', 'help', 'image', 'label', 'group']:
                             continue
                         if 'default' in entry:
                             the_item['default'] = entry['default']
                         if 'help' in entry:
                             the_item['help'] = entry['help']
+                        if 'group' in entry:
+                            the_item['group'] = entry['group']
                         if 'image' in entry:
                             if entry['image'].__class__.__name__ == 'DAFile':
                                 entry['image'].retrieve()
@@ -8894,7 +8911,7 @@ def process_selections(data, exclude=None):
                         the_item['label'] = entry[key]
                         is_not_boolean = False
                         for key, val in entry.items():
-                            if key in ['default', 'help', 'image', 'label']:
+                            if key in ['default', 'help', 'image', 'label', 'group']:
                                 continue
                             if val not in (True, False):
                                 is_not_boolean = True

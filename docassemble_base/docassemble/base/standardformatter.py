@@ -2191,6 +2191,13 @@ def input_for(status, field, wide=False, embedded=False):
             pairlist = list(status.selectcompute[field.number])
         else:
             raise Exception("Unknown choicetype " + field.choicetype)
+        if hasattr(next(iter(pairlist), None), 'group'):
+            import operator
+            # Using optgroups, each option has an associated group
+            pairlist = sorted(pairlist, key=operator.itemgetter('group'))
+            using_opt_groups = True
+        else:
+            using_opt_groups = False
         if hasattr(field, 'shuffle') and field.shuffle:
             random.shuffle(pairlist)
         if field.datatype in ['multiselect', 'object_multiselect']:
@@ -2215,7 +2222,12 @@ def input_for(status, field, wide=False, embedded=False):
                 output += '<span class="da-inline-error-wrapper">'
             output += '<select ' + emb_text + 'name="' + escape_id(saveas_string) + '" id="' + escape_id(saveas_string) + '"' + disable_others_data + ' multiple>'
             the_options = ''
+            last_group = None
             for pair in pairlist:
+                if using_opt_groups and pair.get('group') != last_group:
+                    if last_group != None:
+                        the_options += '</optgroup>'
+                    the_options += f'<optgroup label="{pair[group]}">'
                 if isinstance(pair['key'], str):
                     inner_field = safeid(from_safeid(saveas_string) + "[B" + myb64quote(pair['key']) + "]")
                     key_data = ' data-valname=' + myb64doublequote(pair['key'])
@@ -2242,6 +2254,8 @@ def input_for(status, field, wide=False, embedded=False):
                 else:
                     isselected = ''
                 the_options += '<option value=' + fix_double_quote(inner_field) + key_data + isselected + '>' + markdown_to_html(str(pair['label']), status=status, escape='option', trim=True, do_terms=False) + '</option>'
+            if using_opt_groups:
+                the_options += '</optgroup>'
             output += the_options
             if embedded:
                 output += '</select></span> '
