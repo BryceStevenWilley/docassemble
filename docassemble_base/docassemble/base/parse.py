@@ -8880,9 +8880,9 @@ def process_selections(data, exclude=None):
     result = []
     if (isinstance(data, abc.Iterable) and not isinstance(data, (str, dict)) and not (hasattr(data, 'elements') and isinstance(data.elements, dict))) \
             or (hasattr(data, 'elements') and isinstance(data.elements, (list, set))):
-        logmessage('is iterable!')
+        #logmessage('is iterable!')
         for entry in data:
-            logmessage(f'entry is: {entry}')
+            #logmessage(f'entry is: {entry}')
             if isinstance(entry, dict) or (hasattr(entry, 'elements') and isinstance(entry.elements, dict)):
                 the_item = {}
                 for key in entry:
@@ -8894,7 +8894,7 @@ def process_selections(data, exclude=None):
                         if 'help' in entry:
                             the_item['help'] = entry['help']
                         if 'group' in entry:
-                            logmessage(f'group was in entry!: {entry}')
+                            #logmessage(f'group was in entry!: {entry}')
                             the_item['group'] = entry['group']
                         if 'image' in entry:
                             if entry['image'].__class__.__name__ == 'DAFile':

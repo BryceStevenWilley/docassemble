@@ -2191,7 +2191,7 @@ def input_for(status, field, wide=False, embedded=False):
             pairlist = list(status.selectcompute[field.number])
         else:
             raise Exception("Unknown choicetype " + field.choicetype)
-        logmessage(f'pairlist: {pairlist}')
+        #logmessage(f'pairlist: {pairlist}')
         if 'group' in next(iter(pairlist), {}):
             import operator
             # Using optgroups, each option has an associated group
@@ -2199,7 +2199,7 @@ def input_for(status, field, wide=False, embedded=False):
             using_opt_groups = True
         else:
             using_opt_groups = False
-        logmessage(f"using_opt_groups: {using_opt_groups}")
+        #logmessage(f"using_opt_groups: {using_opt_groups}")
         if hasattr(field, 'shuffle') and field.shuffle:
             random.shuffle(pairlist)
         if field.datatype in ['multiselect', 'object_multiselect']:
