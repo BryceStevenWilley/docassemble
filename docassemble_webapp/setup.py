@@ -63,7 +63,7 @@ install_requires = [
     "docassemblekvsession==0.6",
     "docopt==0.6.2",
     "docutils==0.17.1",
-    "docxcompose==1.3.5-devlemma",
+    "docxcompose==1.3.4",
     "docxtpl==0.15.2",
     "email-validator==1.1.2",
     "et-xmlfile==1.1.0",
