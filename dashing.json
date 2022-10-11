@@ -1,0 +1,56 @@
+{
+    "name": "Docassemble",
+    "package": "docassemble",
+    "index": "index.html",
+    "selectors": {
+        "dt a": "Command",
+        "title": "Guide",
+        "h2": [
+            {
+                "type": "Function",
+                "requiretext": ".*\\(\\)",
+                "matchpath": "docs/functions.html"
+            },
+            {
+                "type": "Variable",
+                "matchpath": "docs/special.html"
+            },
+            {
+                "type": "Class",
+                "matchpath": "docs/objects.html",
+                "requiretext": "^DA.+"
+            },
+            {
+                "type": "Class",
+                "matchpath": "docs/objects.html",
+                "requiretext": "(Thing|Event|Person|Name|Address|Value|LatitudeLongitude|PartyList)"
+            }
+        ],
+        "h2 code": [
+            {
+                "type": "Attribute",
+                "matchpath": "docs/logic.html"
+            },
+            {
+                "type": "Option",
+                "matchpath": "docs/fields.html"
+            },
+            {
+                "type": "Attribute",
+                "matchpath": "docs/initial.html"
+            }
+        ]
+    },
+    "ignore": [
+        "static/test-iframe.html",
+        "static/test-embed.html",
+        "static/test-iframe.html#autolink-259",
+        "test-iframe.html",
+        "ABOUT",
+        "jekyll/",
+        "Page of a web site"
+    ],
+    "icon32x32": "favicon-32x32.png",
+    "allowJS": true,
+    "ExternalURL": "https://docassemble.org/"
+}
