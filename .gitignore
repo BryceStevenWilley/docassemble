@@ -63,3 +63,4 @@ settings.json
 .dir-locals.el
 .flake8
 mypy.ini
+.jj

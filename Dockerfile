@@ -1,5 +1,5 @@
-FROM jhpyle/docassemble-os
-COPY . /tmp/docassemble/
+FROM da_os_small
+COPY --chown=www-data . /tmp/docassemble/
 RUN DEBIAN_FRONTEND=noninteractive TERM=xterm LC_CTYPE=C.UTF-8 LANG=C.UTF-8 \
 bash -c \
 "apt-get -y update \
@@ -9,12 +9,10 @@ bash -c \
 && cp /tmp/docassemble/Docker/VERSION /usr/share/docassemble/webapp/ \
 && cp /tmp/docassemble/Docker/pip.conf /usr/share/docassemble/local3.12/ \
 && cp /tmp/docassemble/Docker/config/* /usr/share/docassemble/config/ \
-&& cp /tmp/docassemble/Docker/cgi-bin/index.sh /usr/lib/cgi-bin/ \
 && cp /tmp/docassemble/Docker/syslog-ng.conf /usr/share/docassemble/webapp/syslog-ng.conf \
 && cp /tmp/docassemble/Docker/syslog-ng-docker.conf /usr/share/docassemble/webapp/syslog-ng-docker.conf \
 && cp /tmp/docassemble/Docker/smart-multi-line.fsm /usr/share/syslog-ng/smart-multi-line.fsm \
 && cp /tmp/docassemble/Docker/docassemble-syslog-ng.conf /usr/share/docassemble/webapp/docassemble-syslog-ng.conf \
-&& cp /tmp/docassemble/Docker/apache.logrotate /etc/logrotate.d/apache2 \
 && cp /tmp/docassemble/Docker/nginx.logrotate /etc/logrotate.d/nginx \
 && cp /tmp/docassemble/Docker/docassemble.logrotate /etc/logrotate.d/docassemble \
 && cp /tmp/docassemble/Docker/cron/docassemble-cron-monthly.sh /etc/cron.monthly/docassemble \
@@ -23,8 +21,6 @@ bash -c \
 && cp /tmp/docassemble/Docker/cron/docassemble-cron-hourly.sh /etc/cron.hourly/docassemble \
 && cp /tmp/docassemble/Docker/cron/syslogng-cron-daily.sh /etc/cron.daily/logrotatepost \
 && cp /tmp/docassemble/Docker/cron/donothing /usr/share/docassemble/cron/donothing \
-&& cp /tmp/docassemble/Docker/docassemble.conf /etc/apache2/conf-available/ \
-&& cp /tmp/docassemble/Docker/docassemble-behindlb.conf /etc/apache2/conf-available/ \
 && cp /tmp/docassemble/Docker/docassemble-supervisor.conf /etc/supervisor/conf.d/docassemble.conf \
 && cp /tmp/docassemble/Docker/ssl/* /usr/share/docassemble/certs/ \
 && cp -r /tmp/docassemble/Docker/ssl /usr/share/docassemble/config/defaultcerts \
@@ -42,25 +38,29 @@ bash -c \
 && chmod ogu+rx /usr/bin/daunoconv \
 && update-exim4.conf \
 && chown -R www-data:www-data \
+   /usr/share/docassemble/local3.10 \
    /usr/share/docassemble/log \
    /usr/share/docassemble/files \
 && chmod ogu+r /usr/share/docassemble/config/config.yml.dist \
 && chmod 755 /etc/ssl/docassemble \
+&& chown -R www-data:www-data \
+   /usr/share/docassemble/config \
 && cd /tmp \
 && echo \"en_US.UTF-8 UTF-8\" >> /etc/locale.gen \
 && locale-gen \
 && update-locale \
 && /usr/bin/pip3 install --break-system-packages unoconv \
-&& cp /usr/local/bin/unoconv /usr/bin/unoconv \
-&& python3 -m venv --copies /usr/share/docassemble/local3.12 \
+&& cp /usr/local/bin/unoconv /usr/bin/unoconv"
+
+USER www-data
+RUN bash -c \
+"python3 -m venv --copies /usr/share/docassemble/local3.12 \
 && source /usr/share/docassemble/local3.12/bin/activate \
 && pip install --upgrade pip==25.1.1 \
 && pip install --upgrade wheel==0.45.1 \
-&& pip install --upgrade mod_wsgi==5.0.2 \
 && pip install --upgrade \
    acme==3.1.0 \
    certbot==3.1.0 \
-   certbot-apache==3.1.0 \
    certbot-nginx==3.1.0 \
    certifi==2025.1.31 \
    cffi==1.17.1 \
@@ -89,47 +89,21 @@ bash -c \
    urllib3==2.3.0 \
 && pip install \
    /tmp/docassemble/docassemble_base \
-   /tmp/docassemble/docassemble_demo \
-   /tmp/docassemble/docassemble_webapp \
-&& mv /etc/crontab /usr/share/docassemble/cron/crontab \
+   /tmp/docassemble/docassemble_webapp"
+
+USER root
+RUN bash -c \
+"mv /etc/crontab /usr/share/docassemble/cron/crontab \
 && ln -s /usr/share/docassemble/cron/crontab /etc/crontab \
-&& mv /etc/cron.daily/apache2 /usr/share/docassemble/cron/apache2 \
-&& ln -s /usr/share/docassemble/cron/apache2 /etc/cron.daily/apache2 \
 && mv /etc/cron.daily/exim4-base /usr/share/docassemble/cron/exim4-base \
 && ln -s /usr/share/docassemble/cron/exim4-base /etc/cron.daily/exim4-base \
 && mv /etc/syslog-ng/syslog-ng.conf /usr/share/docassemble/syslogng/syslog-ng.conf \
 && ln -s /usr/share/docassemble/syslogng/syslog-ng.conf /etc/syslog-ng/syslog-ng.conf \
-&& { if [[ '$(dpkg --print-architecture)' == 'amd64' ]]; then cp /usr/share/docassemble/local3.12/lib/python3.12/site-packages/mod_wsgi/server/mod_wsgi-py312.cpython-312-x86_64-linux-gnu.so /usr/lib/apache2/modules/mod_wsgi.so-3.12; else cp /usr/share/docassemble/local3.12/lib/python3.12/site-packages/mod_wsgi/server/mod_wsgi-py312.cpython-312-aarch64-linux-gnu.so /usr/lib/apache2/modules/mod_wsgi.so-3.12; fi; } \
-&& rm -f /usr/lib/apache2/modules/mod_wsgi.so \
-&& ln -s /usr/lib/apache2/modules/mod_wsgi.so-3.12 /usr/lib/apache2/modules/mod_wsgi.so \
 && rm -f /etc/cron.daily/apt-compat \
 && sed -i -e 's/^\(daemonize\s*\)yes\s*$/\1no/g' -e 's/^bind 127.0.0.1/bind 0.0.0.0/g' /etc/redis/redis.conf \
-&& sed -i -e 's/#APACHE_ULIMIT_MAX_FILES/APACHE_ULIMIT_MAX_FILES/' -e 's/ulimit -n 65536/ulimit -n 8192/' /etc/apache2/envvars \
 && sed -i '/session    required     pam_loginuid.so/c\#session    required   pam_loginuid.so' /etc/pam.d/cron \
 && LANG=en_US.UTF-8 \
-&& { a2dismod ssl \
-; a2enmod rewrite \
-; a2enmod xsendfile \
-; a2enmod proxy \
-; a2enmod proxy_http \
-; a2enmod proxy_wstunnel \
-; a2enmod headers \
-; a2enconf docassemble \
-; echo 'export TERM=xterm' >> /etc/bash.bashrc; }"
-
-USER www-data
-RUN bash -c \
-"source /usr/share/docassemble/local3.12/bin/activate \
-&& python /tmp/docassemble/Docker/nltkdownload.py \
-&& cd /var/www/nltk_data/corpora \
-&& unzip -o wordnet.zip \
-&& unzip -o omw-1.4.zip \
-&& cd /tmp \
-&& mkdir -p /tmp/conv \
-&& pandoc --pdf-engine=lualatex -M latextmpdir=./conv -M pdfa=false /usr/share/docassemble/local3.12/lib/python3.12/site-packages/docassemble/base/data/templates/Legal-Template.yml --template=/usr/share/docassemble/local3.12/lib/python3.12/site-packages/docassemble/base/data/templates/Legal-Template.tex --from=markdown+raw_tex-latex_macros -s -o /tmp/temp.pdf /usr/share/docassemble/local3.12/lib/python3.12/site-packages/docassemble/base/data/templates/hello.md \
-&& rm /tmp/temp.pdf \
-&& pandoc --pdf-engine=lualatex -M latextmpdir=./conv -M pdfa=false --template=/usr/share/docassemble/local3.12/lib/python3.12/site-packages/docassemble/base/data/templates/Legal-Template.rtf -s -o /tmp/temp.rtf /usr/share/docassemble/local3.12/lib/python3.12/site-packages/docassemble/base/data/templates/hello.md \
-&& rm /tmp/temp.rtf"
+; echo 'export TERM=xterm' >> /etc/bash.bashrc"
 
 USER root
 RUN rm -rf /tmp/docassemble

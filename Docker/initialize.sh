@@ -8,6 +8,7 @@ export DA_ACTIVATE="${DA_PYTHON:-${DA_ROOT}/${DA_DEFAULT_LOCAL}}/bin/activate"
 
 echo "initialize: Activating Python with ${DA_ACTIVATE}" >&2
 
+echo "pre activate:" `date +"%T.%N"`
 source "${DA_ACTIVATE}"
 
 export DA_CONFIG_FILE_DIST="${DA_CONFIG_FILE_DIST:-${DA_ROOT}/config/config.yml.dist}"
@@ -34,6 +35,7 @@ mkdir -p /var/run/docassemble
 rm -f /var/run/docassemble/status-*
 touch /var/run/docassemble/da_running
 
+echo "apt update:" `date +"%T.%N"` >&2
 export DEBIAN_FRONTEND=noninteractive
 if [ "${DAALLOWUPDATES:-true}" == "true" ]; then
     echo "initialize: Running apt-get clean" >&2
@@ -41,6 +43,7 @@ if [ "${DAALLOWUPDATES:-true}" == "true" ]; then
     echo "initialize: Running apt-get update" >&2
     apt-get -q -y update &> /dev/null
 fi
+echo "apt update done:" `date +"%T.%N"` >&2
 
 if [[ '$(dpkg --print-architecture)' == 'amd64' ]]; then
     CURRENTARCH=x86_64
@@ -50,6 +53,7 @@ fi
 
 echo "initialize: Determining if web browser already running" >&2
 
+echo "everything running:" `date +"%T.%N"` >&2
 if [ -f /var/run/apache2/apache2.pid ]; then
     APACHE_PID=$(</var/run/apache2/apache2.pid)
     if kill -0 $APACHE_PID &> /dev/null; then
@@ -95,6 +99,7 @@ if [ -f /var/run/crond.pid ]; then
 else
     CRONRUNNING=false
 fi
+echo "everything running done:" `date +"%T.%N"` >&2
 
 echo "initialize: Determining hostname" >&2
 
@@ -225,6 +230,7 @@ else
     export PUBLIC_HOSTNAME="${LOCAL_HOSTNAME}"
 fi
 
+echo "restore from backup:" `date +"%T.%N"` >&2
 if [ "${RESTOREFROMBACKUP}" == "true" ]; then
     echo "initialize: Restoring from backup" >&2
     if [ "${S3ENABLE:-false}" == "true" ]; then
@@ -427,11 +433,13 @@ if [ "${RESTOREFROMBACKUP}" == "true" ]; then
         fi
     fi
 fi
+echo "restore from backup done:" `date +"%T.%N"` >&2
 
 if [ "${BEHINDHTTPSLOADBALANCER:-null}" == "true" ] && [ "${XSENDFILE:-null}" == "null" ]; then
     export XSENDFILE=false
 fi
 
+echo "create config:" `date +"%T.%N"` >&2
 if [ ! -f "$DA_CONFIG_FILE" ]; then
     if [ "${DADEFAULTSECRET:-null}" = "null" ]; then
         DADEFAULTSECRET=$(python -m docassemble.base.generate_key)
@@ -511,6 +519,8 @@ if [ "${DAROOTOWNED:-false}" == "false" ] && [ "${DAREADONLYFILESYSTEM:-false}" 
     chown www-data:www-data "$DA_CONFIG_FILE"
     chsh -s /bin/bash www-data
 fi
+echo "create config done:" `date +"%T.%N"` >&2
+
 
 echo "initialize: Defining environment variables from Configuration" >&2
 
@@ -535,18 +545,20 @@ else
     export SUPERVISORCMD="supervisorctl --serverurl http://localhost:9001"
 fi
 
+echo "first time server init:" `date +"%T.%N"` >&2
 if [ "${DAREADONLYFILESYSTEM:-false}" == "false" ]; then
     if [ ! -f /etc/hasbeeninitialized ]; then
         echo "initialize: This is the first time the server was initialized" >&2
         if [ "${DAROOTOWNED:-false}" == "true" ]; then
             if [ "${DAALLOWUPDATES:-true}" == "true" ] \
                    || [ "${DAENABLEPLAYGROUND:-true}" == "true" ]; then
-                chown -R www-data:www-data /usr/share/docassemble/local3.12
+                # chown -R www-data:www-data /usr/share/docassemble/local3.12
             else
                 echo "initialize: Python virtual environment is read-only" >&2
             fi
             if [ "${DAALLOWCONFIGURATIONEDITING:-true}" == "true" ]; then
-                chown -R www-data:www-data /usr/share/docassemble/config
+                echo "nothing"
+                # chown -R www-data:www-data /usr/share/docassemble/config
             else
                 echo "initialize: The config.yml file is read-only" >&2
             fi
@@ -558,21 +570,26 @@ if [ "${DAREADONLYFILESYSTEM:-false}" == "false" ]; then
                 echo "initialize: The WSGI file is read-only" >&2
             fi
         else
-            echo "initialize: No root ownership; changing file ownership to www-data (this takes a long time)" >&2
+            echo "initialize: No root ownership; changing file ownership to www-data (this takes a long time)" `date +"%T.%N"` >&2
             chsh -s /bin/bash www-data
-            chown -R www-data:www-data /usr/share/docassemble/local3.12
-            chown -R www-data:www-data /usr/share/docassemble/config \
-                  /usr/share/docassemble/webapp/docassemble.wsgi
+            echo "changed shell: " `date +"%T.%N"` >&2
+            #chown -R www-data:www-data /usr/share/docassemble/local3.10
+            echo "chown local3.10: " `date +"%T.%N"` >&2
+            #chown -R www-data:www-data /usr/share/docassemble/config \
+            echo "chown config: " `date +"%T.%N"` >&2
+            chown -R www-data:www-data /usr/share/docassemble/webapp/docassemble.wsgi
         fi
         touch /etc/hasbeeninitialized
     else
         echo "initialize: This is not the first time the server was initialized" >&2
     fi
 fi
+echo "first time server init done:" `date +"%T.%N"` >&2
 
-echo "initialize: Running start hook" >&2
+echo "initialize: Running start hook" `date +"%T.%N"` >&2
 
 python -m docassemble.webapp.starthook "${DA_CONFIG_FILE}"
+echo "start hook done:" `date +"%T.%N"` >&2
 
 if [ "${DAWEBSERVER:-nginx}" = "nginx" ]; then
     echo "initialize: Setting up NGINX basic configuration and uwsgi directory" >&2
@@ -705,6 +722,7 @@ elif [ "${DAREADONLYFILESYSTEM:-false}" == "false" ]; then
     ln -s /usr/share/docassemble/cron/donothing /etc/cron.daily/apache2
 fi
 
+echo "nginx certs setup: " `date +"%T.%N"` >&2
 if [ "${DAWEBSERVER:-nginx}" = "nginx" ] && [ "${DAREADONLYFILESYSTEM:-false}" == "false" ]; then
     echo "initialize: Setting up NGINX configuration" >&2
     if [ "${USELETSENCRYPT:-false}" == "true" ] && [ -f "/etc/letsencrypt/live/${DAHOSTNAME}/fullchain.pem" ]; then
@@ -797,6 +815,7 @@ if [ "${DAWEBSERVER:-nginx}" = "nginx" ] && [ "${DAREADONLYFILESYSTEM:-false}" =
         fi
     fi
 fi
+echo "nginx certs setup done: " `date +"%T.%N"` >&2
 
 echo "initialize: Setting and updating locale" >&2
 
@@ -815,7 +834,7 @@ else
     update-locale LANG="${DA_LANGUAGE}"
 
     if [ -n "$OTHERLOCALES" ]; then
-        echo "initialize: Setting other locales" >&2
+        echo "initialize: Setting other locales" `date +"%T.%N"` >&2
         NEWLOCALE=false
         for LOCALETOSET in "${OTHERLOCALES[@]}"; do
             grep -q "^$LOCALETOSET" /etc/locale.gen || { echo $LOCALETOSET >> /etc/locale.gen; NEWLOCALE=true; }
@@ -826,7 +845,7 @@ else
     fi
 
     if [ -n "$PACKAGES" ]; then
-        echo "initialize: Installing Ubuntu packages specified in the Configuration" >&2
+        echo "initialize: Installing Debian packages specified in the Configuration" `date +"%T.%N"` >&2
         for PACKAGE in "${PACKAGES[@]}"; do
             apt-get -q -y install $PACKAGE &> /dev/null
         done
@@ -907,7 +926,7 @@ if [[ ! $CONTAINERROLE =~ .*:(all):.* ]] && [ "${KUBERNETES:-false}" == "false" 
 fi
 
 if [ "${DAREADONLYFILESYSTEM:-false}" == "false" ]; then
-    echo "initialize: Copying SSL certificates into position, if necessary" >&2
+    echo "initialize: Copying SSL certificates into position, if necessary" `date +"%T.%N"` >&2
 
     if [ ! -f "${DA_ROOT}/certs/apache.key" ] && [ -f "${DA_ROOT}/certs/apache.key.orig" ]; then
         mv "${DA_ROOT}/certs/apache.key.orig" "${DA_ROOT}/certs/apache.key"
@@ -973,7 +992,7 @@ if [ "${DAREADONLYFILESYSTEM:-false}" == "false" ]; then
     python -m docassemble.webapp.install_certs "${DA_CONFIG_FILE}" || exit 1
 fi
 
-echo "initialize: Testing if PostgreSQL is running" >&2
+echo "initialize: Testing if PostgreSQL is running" `date +"%T.%N"` >&2
 
 if pg_isready -q; then
     PGRUNNING=true
@@ -982,7 +1001,7 @@ else
 fi
 
 if [[ $CONTAINERROLE =~ .*:(all|sql):.* ]] && [ "$PGRUNNING" == "false" ] && [ "$DBTYPE" == "postgresql" ]; then
-    echo "initialize: Starting PostgreSQL" >&2
+    echo "initialize: Starting PostgreSQL" `date +"%T.%N"` >&2
     ${SUPERVISORCMD} start main:postgres || exit 1
     sleep 4
     su -c "while ! pg_isready -q; do sleep 1; done" postgres
@@ -1117,16 +1136,18 @@ fi
 if [ "${DAREADONLYFILESYSTEM:-false}" == "false" ]; then
     if [ "${DAUPDATEONSTART:-true}" == "true" ] && [ "${DAALLOWUPDATES:-true}" == "true" ]; then
         echo "initialize: Doing upgrading of packages" >&2
+        echo "initialize: Doing upgrading of packages" `date +"%T.%N"` >&2
         su -c "source \"${DA_ACTIVATE}\" && python -m docassemble.webapp.update \"${DA_CONFIG_FILE}\" initialize" www-data || exit 1
         touch "${DA_ROOT}/webapp/initialized"
     fi
 
     if [ "${DAUPDATEONSTART:-true}" == "initial" ] && [ ! -f "${DA_ROOT}/webapp/initialized" ] && [ "${DAALLOWUPDATES:-true}" == "true" ]; then
-        echo "initialize: Doing initial upgrading of packages" >&2
+        echo "initialize: Doing initial upgrading of packages" `date +"%T.%N"` >&2
         su -c "source \"${DA_ACTIVATE}\" && python -m docassemble.webapp.update \"${DA_CONFIG_FILE}\" initialize" www-data || exit 1
         touch "${DA_ROOT}/webapp/initialized"
     fi
 fi
+echo "initialize: done with initial upgrading of packages" `date +"%T.%N"` >&2
 
 echo "initialize: Testing if RabbitMQ is running" >&2
 
@@ -1175,6 +1196,8 @@ touch /usr/share/docassemble/log/worker.log \
     && touch /usr/share/docassemble/log/websockets.log \
     && chown -R www-data:www-data /usr/share/docassemble/log
 
+
+echo "initialize: starting nginx" `date +"%T.%N"` >&2
 if [ "${DAWEBSERVER:-nginx}" = "none" ]; then
     mkdir -p /var/run/uwsgi
     chown www-data:www-data /var/run/uwsgi
@@ -1182,9 +1205,9 @@ if [ "${DAWEBSERVER:-nginx}" = "none" ]; then
     ${SUPERVISORCMD} stop nascent &> /dev/null
     NASCENTRUNNING=false;
     if [[ $CONTAINERROLE =~ .*:(all|web):.* ]]; then
-        echo "initialize: Starting websockets" >&2
+        echo "initialize: Starting websockets: " `date +"%T.%N"` >&2
         ${SUPERVISORCMD} start websockets
-        echo "initialize: Starting uwsgi" >&2
+        echo "initialize: Starting uwsgi: " `date +"%T.%N"`>&2
         ${SUPERVISORCMD} start uwsgi
     fi
     if [[ $CONTAINERROLE =~ .*:log:.* ]]; then
@@ -1195,10 +1218,11 @@ fi
 
 if [ "${DAWEBSERVER:-nginx}" = "nginx" ]; then
     if [[ $CONTAINERROLE =~ .*:(all|web):.* ]] && [ "$NGINXRUNNING" == "false" ]; then
-        echo "initialize: Getting ready to start NGINX" >&2
+        echo "initialize: Getting ready to start NGINX: " `date +"%T.%N"` >&2
         if [ "${DAREADONLYFILESYSTEM:-false}" == "false" ]; then
             if [ "${WWWUID:-none}" != "none" ] && [ "${WWWGID:-none}" != "none" ] && [ `id -u www-data` != $WWWUID ]; then
                 echo "initialize: Changing the UID and GID of files" >&2
+                echo "initialize: Changing the UID and GID of files" `date +"%T.%N"` >&2
                 OLDUID=`id -u www-data`
                 OLDGID=`id -g www-data`
 
@@ -1218,7 +1242,7 @@ if [ "${DAWEBSERVER:-nginx}" = "nginx" ]; then
                 fi
             fi
             if [ "${USEHTTPS:-false}" == "true" ]; then
-                echo "initialize: Configuring HTTPS" >&2
+                echo "initialize: Configuring HTTPS" `date +"%T.%N"` >&2
                 rm -f /etc/nginx/sites-enabled/docassemblehttp
                 ln -sf /etc/nginx/sites-available/docassemblessl /etc/nginx/sites-enabled/docassemblessl
                 if [ "${USELETSENCRYPT:-false}" == "true" ]; then
@@ -1235,7 +1259,7 @@ if [ "${DAWEBSERVER:-nginx}" = "nginx" ]; then
                     rm -f /etc/letsencrypt/da_using_lets_encrypt
                 fi
             else
-                echo "initialize: Not using HTTPS" >&2
+                echo "initialize: Not using HTTPS" `date +"%T.%N"` >&2
                 rm -f /etc/letsencrypt/da_using_lets_encrypt
                 rm -f /etc/nginx/sites-enabled/docassemblessl
                 ln -sf /etc/nginx/sites-available/docassemblehttp /etc/nginx/sites-enabled/docassemblehttp
@@ -1270,22 +1294,23 @@ if [ "${DAWEBSERVER:-nginx}" = "nginx" ]; then
         fi
     fi
     if [[ $CONTAINERROLE =~ .*:(all|web):.* ]]; then
-        echo "initialize: Starting websockets" >&2
+        echo "initialize: Starting websockets" `date +"%T.%N"` >&2
         ${SUPERVISORCMD} start websockets
-        echo "initialize: Starting uwsgi" >&2
+        echo "initialize: Starting uwsgi" `date +"%T.%N"` >&2
         ${SUPERVISORCMD} start uwsgi
     fi
     if [[ $CONTAINERROLE =~ .*:(all|web|log):.* ]]; then
         if [ "$NGINXRUNNING" == "false" ]; then
             if [ "$NASCENTRUNNING" == "true" ]; then
-                echo "initialize: Stopping the nascent web server" >&2
+                echo "initialize: Stopping the nascent web server" `date +"%T.%N"` >&2
                 ${SUPERVISORCMD} stop nascent &> /dev/null
             fi
-            echo "initialize: Starting NGINX" >&2
+            echo "initialize: Starting NGINX" `date +"%T.%N"` >&2
             ${SUPERVISORCMD} start nginx
         fi
     fi
 fi
+echo "initialize: done with nginx" `date +"%T.%N"` >&2
 
 if [ "${DAWEBSERVER:-nginx}" = "apache" ]; then
     echo "initialize: Getting ready to start Apache" >&2
@@ -1677,6 +1702,6 @@ function stopfunc {
 trap stopfunc SIGINT SIGTERM
 
 touch /var/run/docassemble/ready
-echo "initialize: Finished initializing" >&2
+echo "initialize: Finished initializing" `date +"%T.%N"` >&2
 sleep infinity &
 wait %1
