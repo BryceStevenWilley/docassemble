@@ -1,10 +1,9 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 RUN DEBIAN_FRONTEND=noninteractive \
 apt-get -y update \
 && apt-get -y upgrade \
 && ln -snf /usr/share/zoneinfo/America/New_York /etc/localtime \
 && echo America/New_York > /etc/timezone \
-&& echo ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true | debconf-set-selections \
 && apt-get -q -y install language-pack-en \
 && apt-get -q -y install \
 apt-utils \
@@ -69,7 +68,7 @@ texlive-luatex \
 texlive-xetex \
 texlive-latex-recommended \
 texlive-font-utils \
-texlive-lang-cyrillic \
+texlive-lang-english \
 texlive-extra-utils \
 poppler-utils \
 libaudio-flac-header-perl \
@@ -86,9 +85,7 @@ ffmpeg \
 tesseract-ocr \
 tesseract-ocr-eng \
 libtesseract-dev \
-fonts-ebgaramond-extra \
 ghostscript \
-fonts-liberation \
 cm-super \
 qpdf \
 wamerican \
@@ -113,7 +110,6 @@ liblzma-dev \
 libffi-dev \
 uuid-dev \
 && apt-get -y remove libreoffice-report-builder \
-&& apt-get -q -y install ttf-mscorefonts-installer \
 && apt-get -q -y remove nodejs \
 && apt-get -q -y remove nodejs-doc \
 && apt-get -q -y autoremove \
@@ -121,6 +117,7 @@ uuid-dev \
 && apt-get install -y nodejs \
 && apt-get -y autoremove \
 && apt-get clean
+
 RUN DEBIAN_FRONTEND=noninteractive \
 cd /tmp \
 && sed -i 's/<policy domain="coder" rights="none" pattern="PDF" \/>/<policy domain="coder" rights="read | write" pattern="PDF" \/>/' /etc/ImageMagick-6/policy.xml \
@@ -128,7 +125,7 @@ cd /tmp \
 RUN DEBIAN_FRONTEND=noninteractive TERM=xterm \
 cd /tmp \
 && mkdir -p /etc/ssl/docassemble \
-   /usr/share/docassemble/local3.10 \
+   /usr/share/docassemble/local3.12 \
    /usr/share/docassemble/certs \
    /usr/share/docassemble/backup \
    /usr/share/docassemble/config \
@@ -151,13 +148,13 @@ cd /tmp \
 USER root
 RUN bash -c "\
 if [[ \"$(dpkg --print-architecture)\" == \"arm64\" ]]; then \
-  sed -i \"s/scram-sha-256$/md5/\" /etc/postgresql/14/main/pg_hba.conf \
-  && echo \"password_encryption = md5\" >> /etc/postgresql/14/main/postgresql.conf; \
-  echo \"host   all   all  0.0.0.0/0   md5\" >> /etc/postgresql/14/main/pg_hba.conf; \
+  sed -i \"s/scram-sha-256$/md5/\" /etc/postgresql/16/main/pg_hba.conf \
+  && echo \"password_encryption = md5\" >> /etc/postgresql/16/main/postgresql.conf; \
+  echo \"host   all   all  0.0.0.0/0   md5\" >> /etc/postgresql/16/main/pg_hba.conf; \
 else \
-  echo \"host   all   all  0.0.0.0/0   scram-sha-256\" >> /etc/postgresql/14/main/pg_hba.conf; \
+  echo \"host   all   all  0.0.0.0/0   scram-sha-256\" >> /etc/postgresql/16/main/pg_hba.conf; \
 fi; \
-echo \"listen_addresses = '*'\" >> /etc/postgresql/14/main/postgresql.conf"
+echo \"listen_addresses = '*'\" >> /etc/postgresql/16/main/postgresql.conf"
 COPY --chown=www-data . /tmp/docassemble/
 RUN DEBIAN_FRONTEND=noninteractive TERM=xterm LC_CTYPE=C.UTF-8 LANG=C.UTF-8 \
 bash -c \
@@ -197,7 +194,7 @@ bash -c \
 && chmod ogu+rx /usr/bin/daunoconv \
 && update-exim4.conf \
 && chown -R www-data:www-data \
-   /usr/share/docassemble/local3.10 \
+   /usr/share/docassemble/local3.12 \
    /usr/share/docassemble/log \
    /usr/share/docassemble/files \
 && chmod ogu+r /usr/share/docassemble/config/config.yml.dist \
@@ -258,11 +255,20 @@ RUN bash -c \
 && ln -s /usr/share/docassemble/cron/exim4-base /etc/cron.daily/exim4-base \
 && mv /etc/syslog-ng/syslog-ng.conf /usr/share/docassemble/syslogng/syslog-ng.conf \
 && ln -s /usr/share/docassemble/syslogng/syslog-ng.conf /etc/syslog-ng/syslog-ng.conf \
+<<<<<<< Conflict 2 of 3
 && rm -f /etc/cron.daily/apt-compat \
 && sed -i -e 's/^\(daemonize\s*\)yes\s*$/\1no/g' -e 's/^bind 127.0.0.1/bind 0.0.0.0/g' /etc/redis/redis.conf \
 && sed -i '/session    required     pam_loginuid.so/c\#session    required   pam_loginuid.so' /etc/pam.d/cron \
 && LANG=en_US.UTF-8 \
-; echo 'export TERM=xterm' >> /etc/bash.bashrc"
+ ; echo 'export TERM=xterm' >> /etc/bash.bashrc"
+
+USER www-data
+RUN bash -c \
+"source /usr/share/docassemble/local3.10/bin/activate \
+&& python /tmp/docassemble/Docker/nltkdownload.py \
+&& cd /var/www/nltk_data/corpora \
+&& unzip -o wordnet.zip \
+&& unzip -o omw-1.4.zip"
 
 USER root
 RUN rm -rf /tmp/docassemble
