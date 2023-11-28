@@ -21000,9 +21000,9 @@ def playground_packages():
                                 inner_item = re.sub(r'^"+', '', inner_item)
                                 the_list.append(inner_item)
                             extracted[m.group(1)] = the_list
-                    info_dict = {'readme': readme_text, 'interview_files': data_files['questions'], 'sources_files': data_files['sources'], 'static_files': data_files['static'], 'module_files': data_files['modules'], 'template_files': data_files['templates'], 'dependencies': list(map(lambda y: re.sub(r'[\>\<\=].*', '', y), extracted.get('install_requires', []))), 'description': extracted.get('description', ''), 'author_name': extracted.get('author', ''), 'author_email': extracted.get('author_email', ''), 'license': extracted.get('license', ''), 'url': extracted.get('url', ''), 'version': extracted.get('version', '')}
-
-                    info_dict['dependencies'] = [x for x in map(lambda y: re.sub(r'[\>\<\=].*', '', y), info_dict['dependencies']) if x not in ('docassemble', 'docassemble.base', 'docassemble.webapp')]
+                    deps = list(map(lambda y: re.sub(r'[\>\<\=\@].*', '', y).strip(), extracted.get('install_requires', [])))
+                    info_dict = {'readme': readme_text, 'interview_files': data_files['questions'], 'sources_files': data_files['sources'], 'static_files': data_files['static'], 'module_files': data_files['modules'], 'template_files': data_files['templates'], 'dependencies': deps, 'description': extracted.get('description', ''), 'author_name': extracted.get('author', ''), 'author_email': extracted.get('author_email', ''), 'license': extracted.get('license', ''), 'url': extracted.get('url', ''), 'version': extracted.get('version', '')}
+                    info_dict['dependencies'] = [x for x in map(lambda y: re.sub(r'[\>\<\=\@].*', '', y).strip(), info_dict['dependencies']) if x not in ('docassemble', 'docassemble.base', 'docassemble.webapp')]
                     package_name = re.sub(r'^docassemble\.', '', extracted.get('name', expected_name))
                     with open(os.path.join(directory_for(area['playgroundpackages'], current_project), 'docassemble.' + package_name), 'w', encoding='utf-8') as fp:
                         the_yaml = standardyaml.safe_dump(info_dict, default_flow_style=False, default_style='|')

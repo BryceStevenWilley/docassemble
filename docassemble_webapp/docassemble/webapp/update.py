@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import socket
 import tempfile
 import subprocess
@@ -407,27 +408,42 @@ def update_versions(start_time=None):
     logmessage("update_versions: ended after " + str(time.time() - start_time))
 
 
-def get_home_page_dict():
+def get_direct_url_dict():
     PACKAGE_DIRECTORY = daconfig.get('packages', '/usr/share/docassemble/local' + str(sys.version_info.major) + '.' + str(sys.version_info.minor))
     FULL_PACKAGE_DIRECTORY = os.path.join(PACKAGE_DIRECTORY, 'lib', 'python' + str(sys.version_info.major) + '.' + str(sys.version_info.minor), 'site-packages')
-    home_page = {}
+    urls = {}
     for d in os.listdir(FULL_PACKAGE_DIRECTORY):
+        name = None
+        url = None
+        branch = None
         if not d.startswith('docassemble.'):
             continue
-        metadata_path = os.path.join(d, 'METADATA')
+        metadata_path = os.path.join(FULL_PACKAGE_DIRECTORY, d, 'METADATA')
         if os.path.isfile(metadata_path):
-            name = None
-            url = None
             with open(metadata_path, 'r', encoding='utf-8') as fp:
                 for line in fp:
                     if line.startswith('Name: '):
-                        name = line[6:]
-                    elif line.startswith('Home-page: '):
-                        url = line[11:].rstrip('/')
-                        break
-            if name:
-                home_page[name.lower()] = url
-    return home_page
+                        name = line[6:].strip()
+        json_path = os.path.join(FULL_PACKAGE_DIRECTORY, d, 'direct_url.json')
+        if os.path.isfile(json_path):
+            with open(json_path, 'r', encoding='utf-8') as fp:
+                try:
+                    direct_json = json.load(fp)
+                    if "url" in direct_json:
+                        url = direct_json.get('url')
+                        if url.endswith(".zip") and 'archive' in url:
+                            match = re.search(r'(https://github.com/[^/]+/[^/]+)/archive/(.*)', url)
+                            if match:
+                                url = match.group(1) + ".git"
+                                branch = match.group(2) if not match.group(2).endswith(".zip") else match.group(2)[:-4]
+                    if "vcs_info" in direct_json:
+                        vcs_info = direct_json.get("vcs_info") or {}
+                        branch = vcs_info.get("requested_revision")
+                except Exception as ex:
+                    logmessage(f"Error when looking for dependent package URL and branch: {ex}")
+        if name:
+            urls[name.lower()] = (url, branch)
+    return urls
 
 
 def add_dependencies(user_id, start_time=None):
@@ -444,7 +460,7 @@ def add_dependencies(user_id, start_time=None):
     for package in db.session.execute(select(Package.name).filter_by(active=True)):
         packages_known.add(package.name)
     installed_packages = get_installed_distributions(start_time=start_time)
-    home_pages = None
+    urls = None
     packages_to_add = []
     for package in installed_packages:
         if package.key in packages_known:
@@ -459,11 +475,13 @@ def add_dependencies(user_id, start_time=None):
         db.session.commit()
         for package in packages_to_add:
             if package.key.startswith('docassemble.'):
-                if home_pages is None:
-                    home_pages = get_home_page_dict()
-                home_page = home_pages.get(package.key.lower(), None)
-                if home_page is not None and re.search(r'/github.com/', home_page):
-                    package_entry = Package(name=package.key, package_auth=PackageAuth(user_id=user_id), type='git', giturl=home_page, packageversion=package.version, dependency=True)
+                if urls is None:
+                    urls = get_direct_url_dict()
+                    logmessage(f"get_direct_url_dict: {urls=}")
+                url, branch = urls.get(package.key.lower(), (None, None))
+                logmessage(f"add_dependencies: {package.key=}, {url=}, {branch=}")
+                if url is not None and re.search(r'/github.com/', url):
+                    package_entry = Package(name=package.key, package_auth=PackageAuth(user_id=user_id), type='git', giturl=url, gitbranch=branch, packageversion=package.version, dependency=True)
                 else:
                     package_entry = Package(name=package.key, package_auth=PackageAuth(user_id=user_id), type='pip', packageversion=package.version, dependency=True)
             else:
