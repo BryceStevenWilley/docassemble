@@ -13,6 +13,7 @@ source "${DA_ACTIVATE}"
 export DA_CONFIG_FILE_DIST="${DA_CONFIG_FILE_DIST:-${DA_ROOT}/config/config.yml.dist}"
 export DA_CONFIG_FILE="${DA_CONFIG:-${DA_ROOT}/config/config.yml}"
 export CONTAINERROLE=":${CONTAINERROLE:-all}:"
+export LOGSERVERPORT="${LOGSERVERPORT:514}"
 
 echo "initialize: config.yml is at" $DA_CONFIG_FILE >&2
 
@@ -1105,9 +1106,16 @@ if [[ $CONTAINERROLE =~ .*:(web|celery):.* ]]; then
     fi
 fi
 
+if [ "${LOGSERVER:-undefined}" != "undefined" ]; then
+    if [ "${LOGSERVERPORT:-undefined}" != "undefined" ]; then
+        OTHERLOGSERVER=true
+    fi
+fi
+
 if [[ $CONTAINERROLE =~ .*:(log):.* ]] || [ "${LOGSERVER:-undefined}" == "null" ]; then
     OTHERLOGSERVER=false
 fi
+
 
 if [ "${DAREADONLYFILESYSTEM:-false}" == "false" ]; then
     if [ "$OTHERLOGSERVER" == "false" ] && [ -f "${LOGDIRECTORY}/docassemble.log" ]; then
